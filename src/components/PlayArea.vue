@@ -34,9 +34,9 @@
 
     <!-- 牌堆（absolute 定位在右下角） -->
     <div class="deck-stack" :title="`剩余 ${deckCount} 张`">
-      <div class="deck-card deck-card-3"></div>
-      <div class="deck-card deck-card-2"></div>
-      <div class="deck-card deck-card-1"></div>
+      <div class="deck-card deck-card-3" :style="{ backgroundImage: `url(${cardBackUrl})` }"></div>
+      <div class="deck-card deck-card-2" :style="{ backgroundImage: `url(${cardBackUrl})` }"></div>
+      <div class="deck-card deck-card-1" :style="{ backgroundImage: `url(${cardBackUrl})` }"></div>
       <div class="deck-count">{{ deckCount }}</div>
     </div>
   </div>
@@ -44,6 +44,7 @@
 
 <script setup>
 import PlayingCard from './PlayingCard.vue'
+import cardBackUrl from '../assets/card-back.jpg'
 
 defineProps({
   playedCards: { type: Array, default: () => [] },
@@ -174,14 +175,10 @@ defineProps({
   width: 64px;
   height: 90px;
   border-radius: 6px;
-  border: 2px solid #1a0f24;
-  background:
-    repeating-linear-gradient(
-      45deg,
-      rgba(100,80,160,.3) 0 4px,
-      rgba(60,40,120,.4) 4px 8px
-    ),
-    linear-gradient(135deg, #2d1f5c, #1a0f3c);
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,.5);
 }
 
 .deck-card-1 { bottom: 0; left: 4px; z-index: 3; }
