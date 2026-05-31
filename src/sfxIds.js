@@ -1,0 +1,15 @@
+export const SFX = {
+  DEAL: 'deal',
+  SELECT: 'select',
+  DESELECT: 'deselect',
+  PLAY: 'play',
+  DISCARD: 'discard',
+  SCORE_POP: 'score_pop',
+  JOKER_TRIGGER: 'joker_trigger',
+  BUY_SUCCESS: 'buy_success',
+  BUY_FAIL: 'buy_fail',
+  ROUND_WIN: 'round_win',
+  GAME_WIN: 'game_win',
+  GAME_LOSE: 'game_lose',
+  BUTTON_CLICK: 'button_click',
+}

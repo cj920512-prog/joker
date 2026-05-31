@@ -91,6 +91,8 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { gsap } from 'gsap'
+import { useAudio } from './composables/useAudio.js'
+import { SFX } from './sfxIds.js'
 import SideBar from './components/SideBar.vue'
 import JokerArea from './components/JokerArea.vue'
 import PlayArea from './components/PlayArea.vue'
@@ -145,6 +147,8 @@ const settings = reactive({
   animSpeed: 'normal',
   showFormulaPreview: true,
 })
+
+const audio = useAudio(settings, gameState)
 
 // 动效速度倍率
 const animMultiplier = computed(() => {
@@ -204,6 +208,7 @@ async function dealCards(count) {
   for (let i = 0; i < newCards.length; i++) {
     await delay(60 * animMultiplier.value)
     hand.value.push(newCards[i])
+    audio.playSFX(SFX.DEAL)
   }
 }
 
@@ -259,9 +264,11 @@ function toggleSelect(cardId) {
   const idx = selectedCards.value.indexOf(cardId)
   if (idx >= 0) {
     selectedCards.value.splice(idx, 1)
+    audio.playSFX(SFX.DESELECT)
   } else {
     if (selectedCards.value.length < 5) {
       selectedCards.value.push(cardId)
+      audio.playSFX(SFX.SELECT)
     }
   }
   // 更新牌型
@@ -282,6 +289,7 @@ async function handlePlay() {
   const handType = identifyHand(cards)
 
   // 步骤1: 从手牌移除，放到出牌区
+  audio.playSFX(SFX.PLAY)
   hand.value = hand.value.filter(c => !selectedCards.value.includes(c.id))
   selectedCards.value = []
   playedCards.value = cards
@@ -306,6 +314,7 @@ async function handlePlay() {
   const { jokerTriggers } = calculateScore(cards, handType, ownedJokers.value)
   for (const trigger of jokerTriggers) {
     triggeredJoker.value = trigger.jokerId
+    audio.playSFX(SFX.JOKER_TRIGGER)
     if (trigger.type === 'add_mult') {
       battleMult.value += trigger.delta
       flyLabel(`+${trigger.delta} Mult`, 'mult', `joker-${trigger.jokerId}`)
@@ -318,6 +327,7 @@ async function handlePlay() {
   }
 
   // 步骤5: 公式弹出
+  audio.playSFX(SFX.SCORE_POP)
   showFormula.value = true
   formulaScore.value = battleChips.value * battleMult.value
   await delay(800 * animMultiplier.value)
@@ -346,6 +356,7 @@ async function handlePlay() {
     await delay(300)
     enterShopOrWin()
   } else if (handsLeft.value <= 0) {
+    audio.playSFX(SFX.GAME_LOSE)
     gameState.value = 'lost'
   }
 }
@@ -360,6 +371,7 @@ async function handleDiscard() {
   if (discardsLeft.value <= 0) return
   isAnimating.value = true
 
+  audio.playSFX(SFX.DISCARD)
   const discardIds = [...selectedCards.value]
   hand.value = hand.value.filter(c => !discardIds.includes(c.id))
   selectedCards.value = []
@@ -379,6 +391,7 @@ async function handleDiscard() {
 function enterShopOrWin() {
   // 大盲注（index=2）通关直接结束
   if (currentBlindIndex.value >= BLINDS.length - 1) {
+    audio.playSFX(SFX.GAME_WIN)
     gameState.value = 'won'
     return
   }
@@ -387,6 +400,7 @@ function enterShopOrWin() {
   totalCoins.value += reward
   shopJokers.value = getRandomShopJokers()
   aiSuggestId.value = null
+  audio.playSFX(SFX.ROUND_WIN)
   gameState.value = 'shop'
 }
 
@@ -404,12 +418,15 @@ function getRandomShopJokers() {
 // =====================
 
 function buyJoker(joker) {
-  if (totalCoins.value < joker.price) return
-  if (ownedJokers.value.length >= 5) return
+  if (totalCoins.value < joker.price || ownedJokers.value.length >= 5) {
+    audio.playSFX(SFX.BUY_FAIL)
+    return
+  }
   totalCoins.value -= joker.price
   ownedJokers.value.push({ ...joker })
   const idx = shopJokers.value.findIndex(j => j.id === joker.id)
   if (idx >= 0) shopJokers.value[idx].sold = true
+  audio.playSFX(SFX.BUY_SUCCESS)
 }
 
 // =====================
