@@ -11,27 +11,30 @@ export function useAudio(settings, gameState) {
   let bgmAudio = null
   let bgmPaused = false
 
+  // import.meta.env.BASE_URL is '/joker/' on GitHub Pages, './' in dev
+  const base = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '')
+
   const sfxFiles = {
-    [SFX.DEAL]:          '/audio/sfx/deal.wav',
-    [SFX.SELECT]:        '/audio/sfx/select.wav',
-    [SFX.DESELECT]:      '/audio/sfx/deselect.wav',
-    [SFX.PLAY]:          '/audio/sfx/play.wav',
-    [SFX.DISCARD]:       '/audio/sfx/discard.wav',
-    [SFX.SCORE_POP]:     '/audio/sfx/score_pop.wav',
-    [SFX.JOKER_TRIGGER]: '/audio/sfx/joker_trigger.wav',
-    [SFX.BUY_SUCCESS]:   '/audio/sfx/buy_success.wav',
-    [SFX.BUY_FAIL]:      '/audio/sfx/buy_fail.wav',
-    [SFX.ROUND_WIN]:     '/audio/sfx/round_win.wav',
-    [SFX.GAME_WIN]:      '/audio/sfx/game_win.wav',
-    [SFX.GAME_LOSE]:     '/audio/sfx/game_lose.wav',
-    [SFX.BUTTON_CLICK]:  '/audio/sfx/button_click.wav',
+    [SFX.DEAL]:          `${base}/audio/sfx/deal.wav`,
+    [SFX.SELECT]:        `${base}/audio/sfx/select.wav`,
+    [SFX.DESELECT]:      `${base}/audio/sfx/deselect.wav`,
+    [SFX.PLAY]:          `${base}/audio/sfx/play.wav`,
+    [SFX.DISCARD]:       `${base}/audio/sfx/discard.wav`,
+    [SFX.SCORE_POP]:     `${base}/audio/sfx/score_pop.wav`,
+    [SFX.JOKER_TRIGGER]: `${base}/audio/sfx/joker_trigger.wav`,
+    [SFX.BUY_SUCCESS]:   `${base}/audio/sfx/buy_success.wav`,
+    [SFX.BUY_FAIL]:      `${base}/audio/sfx/buy_fail.wav`,
+    [SFX.ROUND_WIN]:     `${base}/audio/sfx/round_win.wav`,
+    [SFX.GAME_WIN]:      `${base}/audio/sfx/game_win.wav`,
+    [SFX.GAME_LOSE]:     `${base}/audio/sfx/game_lose.wav`,
+    [SFX.BUTTON_CLICK]:  `${base}/audio/sfx/button_click.wav`,
   }
 
   const bgmFiles = {
-    playing: '/audio/bgm/gameplay.wav',
-    shop:    '/audio/bgm/shop.wav',
-    won:     '/audio/bgm/win.wav',
-    lost:    '/audio/bgm/lose.wav',
+    playing: `${base}/audio/bgm/gameplay.wav`,
+    shop:    `${base}/audio/bgm/shop.wav`,
+    won:     `${base}/audio/bgm/win.wav`,
+    lost:    `${base}/audio/bgm/lose.wav`,
   }
 
   // 预缓存 SFX：每个音效保留一个 Audio 对象池（支持快速连发）
