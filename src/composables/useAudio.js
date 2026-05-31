@@ -1,5 +1,4 @@
 import { watch } from 'vue'
-import { Howl, Howler } from 'howler'
 import { SFX } from '../sfxIds.js'
 
 let instance = null
@@ -9,10 +8,8 @@ export function useAudio(settings, gameState) {
 
   let unlocked = false
   let currentPhase = null
-  let bgmHowl = null
+  let bgmAudio = null
   let bgmPaused = false
-
-  const sfxHowls = {}
 
   const sfxFiles = {
     [SFX.DEAL]:          '/audio/sfx/deal.wav',
@@ -37,23 +34,24 @@ export function useAudio(settings, gameState) {
     lost:    '/audio/bgm/lose.wav',
   }
 
+  // 预缓存 SFX：每个音效保留一个 Audio 对象池（支持快速连发）
+  const sfxPool = {}
   function preloadSFX() {
     for (const [id, src] of Object.entries(sfxFiles)) {
-      sfxHowls[id] = new Howl({
-        src: [src],
-        preload: true,
-        onloaderror: (_, err) => console.warn('[audio] sfx load fail:', src, err),
-      })
+      const a = new Audio(src)
+      a.preload = 'auto'
+      sfxPool[id] = a
     }
   }
 
   function playSFX(id) {
     if (!unlocked) return
-    const h = sfxHowls[id]
-    if (!h) return
-    const vol = settings.sfxVolume / 100
-    h.volume(vol)
-    h.play()
+    const orig = sfxPool[id]
+    if (!orig) return
+    // clone 支持同一音效快速连发
+    const a = orig.cloneNode()
+    a.volume = (settings.sfxVolume ?? 70) / 100
+    a.play().catch(() => {})
   }
 
   function setBGMPhase(phase) {
@@ -62,57 +60,37 @@ export function useAudio(settings, gameState) {
     if (!src) return
     currentPhase = phase
 
-    // 淡出并停掉旧 BGM
-    const old = bgmHowl
-    if (old) {
-      old.fade(old.volume(), 0, 600)
-      setTimeout(() => { old.stop(); old.unload() }, 650)
+    // 停掉旧 BGM
+    if (bgmAudio) {
+      bgmAudio.pause()
+      bgmAudio.src = ''
+      bgmAudio = null
     }
 
-    const targetVol = (settings.bgmVolume ?? 50) / 100
-    const loop = phase === 'playing' || phase === 'shop'
+    const a = new Audio(src)
+    a.loop = phase === 'playing' || phase === 'shop'
+    a.volume = (settings.bgmVolume ?? 50) / 100
+    a.preload = 'auto'
+    bgmAudio = a
 
-    const howl = new Howl({
-      src: [src],
-      volume: 0,
-      loop,
-      preload: true,
-      // 加载完成后才 play+fade，避免静默失败
-      onload() {
-        if (bgmHowl !== howl) return // 已被新 phase 替换，放弃
-        if (bgmPaused) return
-        howl.play()
-        howl.fade(0, targetVol, 800)
-      },
-      onloaderror: (_, err) => console.warn('[audio] bgm load fail:', src, err),
-      onplayerror: (_, err) => {
-        console.warn('[audio] bgm play error:', err)
-        // Web Audio 被 suspend 时尝试 resume 后重试
-        Howler.ctx?.resume().then(() => howl.play())
-      },
-    })
-
-    bgmHowl = howl
+    a.play().catch(err => console.warn('[audio] bgm play failed:', err))
   }
 
   function setBGMVolume(v) {
-    if (bgmHowl && !bgmPaused) {
-      bgmHowl.volume(v / 100)
+    if (bgmAudio && !bgmPaused) {
+      bgmAudio.volume = v / 100
     }
   }
 
   function handleVisibilityChange() {
     if (document.visibilityState === 'hidden') {
       bgmPaused = true
-      if (bgmHowl) {
-        bgmHowl.fade(bgmHowl.volume(), 0, 200)
-        setTimeout(() => { if (bgmPaused) bgmHowl?.pause() }, 220)
-      }
+      bgmAudio?.pause()
     } else {
       bgmPaused = false
-      if (bgmHowl) {
-        bgmHowl.play()
-        bgmHowl.fade(0, (settings.bgmVolume ?? 50) / 100, 400)
+      if (bgmAudio) {
+        bgmAudio.volume = (settings.bgmVolume ?? 50) / 100
+        bgmAudio.play().catch(() => {})
       }
     }
   }
@@ -120,12 +98,9 @@ export function useAudio(settings, gameState) {
   function unlock() {
     if (unlocked) return
     unlocked = true
-    // resume AudioContext（浏览器 autoplay policy）
-    Howler.ctx?.resume()
     preloadSFX()
     currentPhase = null
-    const phase = gameState?.value ?? 'playing'
-    setBGMPhase(phase)
+    setBGMPhase(gameState?.value ?? 'playing')
     document.removeEventListener('click', unlock)
     document.removeEventListener('keydown', unlock)
   }
