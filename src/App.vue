@@ -83,6 +83,22 @@
       @update="updateSettings"
     />
 
+    <!-- 全局 BGM 播放器 -->
+    <div class="bgm-player" :class="{ 'bgm-player--muted': bgmMuted }">
+      <button class="bgm-toggle" @click="toggleBGM" :title="bgmMuted ? '开启音乐' : '静音'">
+        {{ bgmMuted ? '🔇' : '🎵' }}
+      </button>
+      <span class="bgm-label">{{ bgmTrackName }}</span>
+      <input
+        class="bgm-vol"
+        type="range"
+        min="0"
+        max="100"
+        :value="settings.bgmVolume"
+        @input="e => updateSettings({ key: 'bgmVolume', value: Number(e.target.value) })"
+      />
+    </div>
+
     <!-- 飞字容器 -->
     <div id="fly-labels"></div>
   </div>
@@ -149,6 +165,26 @@ const settings = reactive({
 })
 
 const audio = useAudio(settings, gameState)
+
+// BGM 播放器状态
+const bgmMuted = ref(false)
+const bgmVolumeBeforeMute = ref(50)
+
+const bgmTrackName = computed(() => {
+  const names = { playing: '战斗音乐', shop: '商店音乐', won: '胜利音乐', lost: '失败音乐' }
+  return names[gameState.value] ?? '背景音乐'
+})
+
+function toggleBGM() {
+  if (bgmMuted.value) {
+    bgmMuted.value = false
+    updateSettings({ key: 'bgmVolume', value: bgmVolumeBeforeMute.value })
+  } else {
+    bgmVolumeBeforeMute.value = settings.bgmVolume
+    bgmMuted.value = true
+    updateSettings({ key: 'bgmVolume', value: 0 })
+  }
+}
 
 // 动效速度倍率
 const animMultiplier = computed(() => {
@@ -532,6 +568,69 @@ onMounted(() => {
   height: 100vh;
   overflow: hidden;
   min-width: 0;
+}
+
+/* BGM 播放器 */
+.bgm-player {
+  position: fixed;
+  top: 16px;
+  right: 72px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(10, 20, 56, 0.85);
+  border: 1px solid rgba(74, 107, 255, 0.35);
+  border-radius: 20px;
+  padding: 6px 14px 6px 8px;
+  backdrop-filter: blur(8px);
+  transition: opacity 0.3s;
+}
+
+.bgm-player--muted {
+  opacity: 0.6;
+}
+
+.bgm-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  transition: transform 0.15s;
+}
+
+.bgm-toggle:hover {
+  transform: scale(1.2);
+}
+
+.bgm-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.65);
+  white-space: nowrap;
+  min-width: 52px;
+}
+
+.bgm-vol {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 72px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(74, 107, 255, 0.4);
+  outline: none;
+  cursor: pointer;
+}
+
+.bgm-vol::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #4a6bff;
+  cursor: pointer;
 }
 
 /* 设置按钮 */
